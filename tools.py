@@ -2,21 +2,26 @@ from langchain_core.tools import tool
 from ddgs import DDGS
 import trafilatura
 import os
-from config import Settings
+from config import Settings, SEARCH_ENGINE
 
 @tool
 def write_report(filename: str, content: str) -> str:
-    "Writes a report with given content in markdown format to given relative filename. Returns full path to created file."
+    "Writes a report with the specified content in markdown format to a file with the specified name. " \
+    "Returns the full path to the created file."
     os.makedirs(Settings.output_dir, exist_ok=True)
     path=Settings.output_dir+"/"+filename
-    open(path, 'w').write(content)
+    open(file=path, mode='wt', encoding="utf-8").write(content)
     return path
 
 @tool
 def web_search(query: str) -> list[dict]:
     "Performs WEB search for given query string and returns list of results each contains attributes " \
-    "title (page title), href (URL) and body (snippet — 1-2 sentences from the page)."
-    return DDGS().text(query, max_results=Settings.max_search_results)
+    "title (page title), href (URL) and body (snippet — 1-2 sentences from the page). " \
+    "On failure or out of results returns text \"web_search error: \" and error description."
+    try:
+        return DDGS().text(query, max_results=Settings.max_search_results, backend=SEARCH_ENGINE)
+    except Exception as e:
+        return f"web_search error: {type(e).__name__}: {e}"
 
 @tool
 def read_url(url: str) -> str:
